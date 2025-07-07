@@ -24,6 +24,7 @@ import (
 	"os"
 	"os/user"
 	"strconv"
+	"strings"
 )
 
 var BuildVersion string
@@ -39,7 +40,7 @@ func whoAmI() string {
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile | log.Lmicroseconds)
 	host := flag.String("l", "localhost", "address to listen on")
-	port := flag.Int("p", 3128, "port number to listen on")
+	port := flag.Int("p", 3128, "http port number to listen on")
 	pacurl := flag.String("C", "", "url of proxy auto-config (pac) file")
 	domain := flag.String("d", "", "domain of the proxy account (for NTLM auth)")
 	username := flag.String("u", whoAmI(), "username of the proxy account (for NTLM auth)")
@@ -86,7 +87,8 @@ func main() {
 
 	for _, network := range networks(*host) {
 		go func(network string) {
-			l, err := net.Listen(network, s.Addr)
+			l, err := net.Listen(network, ":"+strconv.Itoa(*port))
+			fmt.Println(network, s.Addr)
 			if err != nil {
 				errch <- err
 			} else {
@@ -124,7 +126,7 @@ func createServer(host string, port int, pacurl string, a *authenticator) *http.
 }
 
 func networks(hostname string) []string {
-	if hostname == "" {
+	if strings.Compare(hostname, "localhost") == 0 || hostname == "" {
 		return []string{"tcp"}
 	}
 	addrs, err := net.LookupIP(hostname)
